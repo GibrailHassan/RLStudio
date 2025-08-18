@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+.eggs/
+.wheelhouse/
+
+# Virtual envs
+.env/
+.venv/
+venv/
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs & temp
+logs/
+*.log
+*.tmp
+
+# Coverage & test artifacts
+htmlcov/
+.coverage*
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# ML artifacts
+mlruns/
+artifacts/
+checkpoints/
+
+# Config / secrets (patterns)
+*.env
+.env.*
