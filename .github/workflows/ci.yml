@@ -9,19 +9,46 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.10', '3.11' ]
+      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest
-      - name: Lint & Tests (placeholder)
-        run: |
-          echo "No code yet"
-          pytest -q || true
+          pip install -e .[dev]
+        shell: bash
+
+      - name: Ruff lint
+        run: ruff check .
+        shell: bash
+
+      - name: Ruff format check
+        run: ruff format --check .
+        shell: bash
+
+      - name: Mypy type check
+        run: mypy src/rlstudio || (echo "Type checking failed" && exit 1)
+        shell: bash
+
+      - name: Run tests
+        run: pytest -q
+        shell: bash
