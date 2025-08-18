@@ -1,6 +1,6 @@
 # RLStudio
 
-Early-stage reinforcement learning framework.
+Early-stage reinforcement learning framework (internal educational / experimental project).
 
 ## Status
 
@@ -21,6 +21,6 @@ rlstudio run configs/ppo/cartpole.yaml
 
 See `RLStudio Project Plan` for full roadmap (to be added/imported).
 
-## License
+## Usage / Rights
 
-Apache-2.0 (pending full text insertion).
+Internal educational prototype. Not open-source; all rights reserved. See `NOTICE.md` for permitted internal use and restrictions.
