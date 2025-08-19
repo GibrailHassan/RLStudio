@@ -5,6 +5,7 @@ Design goals (initial):
 * Store transitions column-wise for extensibility later.
 * Accept either a `Batch` or individual components.
 """
+
 from __future__ import annotations
 
 from collections import deque
@@ -38,4 +39,8 @@ class ReplayBufferSimple:
         return len(self._data)
 
     def stats(self) -> dict:
-        return {"capacity": self.capacity, "size": len(self), "batch_units": sum(b.size() for b in self._data)}
+        return {
+            "capacity": self.capacity,
+            "size": len(self),
+            "batch_units": sum(b.size() for b in self._data),
+        }
