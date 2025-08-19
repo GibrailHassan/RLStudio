@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 BatchData = Any  # Placeholder tensor/array type; refined after adding torch/np guards.
 
@@ -50,14 +50,14 @@ class Batch:
         if len(batches) == 1:
             return batches[0]
 
-        def _cat(values):  # naive concatenation supporting list-like
+        def _cat(values: Sequence[Any]) -> Any:  # naive concatenation supporting list-like
             first = values[0]
             if isinstance(first, list):
-                out = []
+                out: List[Any] = []
                 for v in values:
-                    out.extend(v)
+                    out.extend(v)  # type: ignore[arg-type]
                 return out
-            # Fallback: attempt + operator
+            # Fallback: attempt + operator (works for tensors / arrays typically)
             acc = first
             for v in values[1:]:
                 acc = acc + v  # type: ignore[operator]
