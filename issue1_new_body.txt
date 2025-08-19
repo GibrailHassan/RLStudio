@@ -1,0 +1,33 @@
+Umbrella tracking issue for Milestone 1a: Core Contracts & Reproducibility.
+Scope: Issues #2-#28 (initial foundation). This checklist mirrors milestone membership.
+
+Checklist:
+- [ ] #2 Project scaffolding & dependency baseline
+- [ ] #3 CI pipeline baseline (pytest, placeholder)
+- [ ] #4 Core interface spec & Batch schema
+- [ ] #5 Base RLModule implementation
+- [ ] #6 Trainer abstraction skeleton
+- [ ] #7 Minimal ReplayBuffer + interface
+- [ ] #8 Environment factory pattern
+- [ ] #9 Reproducible seeding utility
+- [ ] #10 Checkpoint schema & save/load utilities
+- [ ] #11 Minimal plugin/registry mechanism
+- [ ] #12 Metrics schema & lightweight logger
+- [ ] #13 Structured logging baseline
+- [ ] #14 Evaluation protocol design
+- [ ] #15 PPO algorithm skeleton
+- [ ] #16 Learning regression harness baseline
+- [ ] #17 Batch dataclass implementation
+- [ ] #18 Property-based tests (initial)
+- [ ] #19 Pre-commit hooks baseline
+- [ ] #20 Typing & mypy baseline
+- [ ] #21 Configuration baseline (Hydra-ready design)
+- [ ] #22 Architecture overview document
+- [ ] #23 ADR template & initial ADRs
+- [ ] #24 KPI definitions document
+- [ ] #25 MLflow integration stub
+- [ ] #26 Sphinx docs scaffold
+- [ ] #27 Performance instrumentation hooks
+- [ ] #28 KPI dashboard script (initial)
+
+Legend: [ ] open, [x] closed. Update manually (automation TBD).
