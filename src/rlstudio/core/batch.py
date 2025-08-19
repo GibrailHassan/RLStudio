@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any
 
 
 @dataclass
@@ -12,12 +12,12 @@ class Batch:
     Column-wise storage of transitions. Kept intentionally small for milestone 1a.
     """
 
-    observations: List[Any]
-    actions: List[Any]
-    rewards: List[float]
-    terminals: List[bool]
-    next_observations: List[Any]
-    infos: List[dict[str, Any]] = field(default_factory=list)
+    observations: list[Any]
+    actions: list[Any]
+    rewards: list[float]
+    terminals: list[bool]
+    next_observations: list[Any]
+    infos: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         n = len(self.observations)
@@ -36,7 +36,7 @@ class Batch:
         return len(self.rewards)
 
     @staticmethod
-    def merge(batches: Iterable["Batch"]) -> "Batch":
+    def merge(batches: Iterable[Batch]) -> Batch:
         batches = list(batches)
         if not batches:
             raise ValueError("no batches to merge")
@@ -50,12 +50,12 @@ class Batch:
                 list(b.next_observations),
                 infos=[dict(x) for x in b.infos],
             )
-        obs: List[Any] = []
-        acts: List[Any] = []
-        rews: List[float] = []
-        terms: List[bool] = []
-        nxt: List[Any] = []
-        infos: List[dict[str, Any]] = []
+        obs: list[Any] = []
+        acts: list[Any] = []
+        rews: list[float] = []
+        terms: list[bool] = []
+        nxt: list[Any] = []
+        infos: list[dict[str, Any]] = []
         for b in batches:
             obs.extend(b.observations)
             acts.extend(b.actions)
@@ -83,7 +83,7 @@ class Batch:
         terminal: bool,
         next_obs: Any,
         info: dict[str, Any] | None = None,
-    ) -> "Batch":
+    ) -> Batch:
         return Batch(
             [obs],
             [action],

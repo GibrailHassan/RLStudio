@@ -26,7 +26,7 @@ Use pytest. Add learning regression tests for algorithm changes.
 
 ## Code Style
 
-Black, isort, flake8 (to be configured). Type checking (mypy/pyright) for core modules.
+Ruff (format + lint + import sorting). Type checking via mypy (strict for core modules).
 
 ## Reporting Issues
 

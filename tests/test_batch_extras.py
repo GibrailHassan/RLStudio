@@ -1,5 +1,6 @@
-from rlstudio.core.batch import Batch
 import pytest
+
+from rlstudio.core.batch import Batch
 
 
 def test_merge_single():
