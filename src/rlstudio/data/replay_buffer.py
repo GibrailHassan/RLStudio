@@ -33,7 +33,10 @@ class ReplayBufferSimple:
             raise ValueError("buffer empty")
         if batch_size == 1:
             return self._data[-1]
-        # Naive: return most recent N batches.
+        # Sampling policy (milestone 1a): deterministic, returns the most recent
+        # N batches (no randomization). This keeps implementation trivial and
+        # aids reproducibility. Future versions can introduce random sampling
+        # or prioritized strategies without changing the public API.
         items = list(self._data)[-batch_size:]
         return Batch.merge(items)
 
