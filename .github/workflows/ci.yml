@@ -37,16 +37,10 @@ jobs:
           pip install -e .[dev]
         shell: bash
 
-      - name: Ruff lint (fast static checks)
-        run: ruff check .
-        shell: bash
-
-      - name: Black format check
-        run: black --check .
-        shell: bash
-
-      - name: Flake8 lint
-        run: flake8 src/rlstudio
+      - name: Ruff lint & format check
+        run: |
+          ruff check --output-format=full .
+          ruff format --check .
         shell: bash
 
       - name: Mypy type check

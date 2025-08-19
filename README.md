@@ -26,7 +26,7 @@ uv venv && source .venv/bin/activate  # or on Windows: .venv\\Scripts\\activate
 uv pip install -e .[dev]
 ```
 
-Tooling stack: Ruff (quick lint), Black (format), Flake8 (style safety net), mypy (types), pytest.
+Tooling stack: Ruff (lint + format + import sorting), mypy (types), pytest.
 
 ## Milestones
 
