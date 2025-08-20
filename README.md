@@ -1,41 +1,14 @@
 # RLStudio
 
-<<<<<<< HEAD
-Early-stage reinforcement learning framework (internal educational / experimental project).
-
-## Status
-
-Milestone 1a: Core Contracts & Reproducibility (in planning).
-=======
 Early-stage reinforcement learning framework.
 
 ## Status
 
 Milestone 1a: Core Contracts & Reproducibility (in progress).
+
 Implemented so far:
 
-* Batch container with validation & helpers
-* Minimal in‑memory `ReplayBufferSimple`
-* Core Protocols: `RLModule`, `ReplayBuffer`, `Trainer`
-* Deterministic seeding utility (`seed_all`)
-* Tooling: Ruff (lint+format), mypy (strict), pytest
->>>>>>> develop
-
-## Vision
-
-Flexible, scalable, reproducible RL with layered APIs and strong testing discipline.
-
-````markdown
-# RLStudio
-
-Early-stage reinforcement learning framework.
-
-## Status
-
-Milestone 1a: Core Contracts & Reproducibility (in progress).
-Implemented so far:
-
-* Batch container with validation & helpers
+* Batch container with validation & helpers (field name `dones` with read‑only alias `terminals`)
 * Minimal in‑memory `ReplayBufferSimple`
 * Core Protocols: `RLModule`, `ReplayBuffer`, `Trainer`
 * Deterministic seeding utility (`seed_all`)
@@ -54,7 +27,7 @@ pip install -e .[dev]
 pytest -q  # run test suite (should be green)
 ```
 
-Basic usage (playground):
+Basic usage:
 
 ```python
 from rlstudio import Batch, ReplayBufferSimple, seed_all
@@ -72,7 +45,7 @@ print(sample.rewards)
 You can use [uv](https://github.com/astral-sh/uv) for faster installs:
 
 ```bash
-uv venv && source .venv/bin/activate  # or on Windows: .venv\\Scripts\\activate
+uv venv && .venv\\Scripts\\activate  # Windows
 uv pip install -e .[dev]
 ```
 
@@ -84,13 +57,20 @@ Ruff acts as both formatter and linter (Black/Flake8 removed). Run:
 ruff check . && ruff format --check .
 ```
 
+## Batch Notes
+
+The canonical termination field is stored as `dones`; a compatibility alias property `terminals` is provided. Prefer `dones` when constructing batches and `batch.terminals` only for forward-facing terminology.
+
+`Batch.merge` performs a shallow list concatenation and returns a new instance. `Batch.from_transition` builds a single‑step batch.
+
+## Seeding
+
+`seed_all(seed, deterministic=True)` seeds Python, NumPy, and Torch (if available) and returns metadata. Call it once at process start for reproducibility.
+
 ## Milestones
 
 See `project plan.md` for the broader roadmap and milestone breakdown.
 
 ## License
 
-Dual MIT / Apache-2.0 candidate; currently evaluating. All contributions default to MIT unless otherwise noted until formalized.
-
-````
-See `project plan.md` for the broader roadmap and milestone breakdown.
+License finalization pending (MIT vs Apache-2.0). Until finalized, contributions default to MIT.

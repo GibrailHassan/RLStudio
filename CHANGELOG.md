@@ -12,3 +12,7 @@ All notable changes to this project will be documented in this file.
 - ReplayBufferSimple (deterministic recent sampling) with tests.
 - Seeding utility covering Python, NumPy, Torch.
 - Ruff-only tooling (replaces Black/Flake8/isort) + strict mypy.
+
+### Documentation
+
+- Cleaned README (removed merge artifacts) and clarified `Batch` dones/terminals alias & seeding usage.
