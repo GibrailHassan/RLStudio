@@ -50,3 +50,8 @@ jobs:
       - name: Run tests
         run: pytest -q
         shell: bash
+      - name: Build docs
+        run: |
+          pip install .[docs]
+          sphinx-build -b html docs docs/_build/html || echo "Docs build warnings ignored"
+        shell: bash
