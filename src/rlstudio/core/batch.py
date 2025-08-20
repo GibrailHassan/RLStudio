@@ -1,35 +1,48 @@
+"""Batch container for RL transitions.
+
+Unified, conflict-free version with backward compatibility for earlier 'dones' naming.
+Primary field retained as 'dones' (list[bool]); a read-only alias property 'terminals'
+is provided for forward-looking terminology.
+"""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
-
-BatchData = Any  # Placeholder tensor/array type; refined after adding torch/np guards.
+from collections.abc import Iterable
+from dataclasses import dataclass, field
+from typing import Any, Dict
 
 
 @dataclass
 class Batch:
-    """Minimal experience container.
+    observations: list[Any]
+    actions: list[Any]
+    rewards: list[float]
+    dones: list[bool]
+    next_observations: list[Any]
+    infos: list[dict[str, Any]] = field(default_factory=list)
 
-    Fields kept intentionally generic for early milestone; algorithms may extend via composition.
-    """
+    # --- compatibility alias -------------------------------------------------
+    @property
+    def terminals(self) -> list[bool]:  # pragma: no cover - simple alias
+        return self.dones
 
-    observations: BatchData
-    actions: BatchData
-    rewards: BatchData
-    dones: BatchData
-    next_observations: Optional[BatchData]
-    infos: Any = None  # Structure not enforced here.
+    # --- lifecycle -----------------------------------------------------------
+    def __post_init__(self) -> None:
+        n = len(self.observations)
+        if not (
+            len(self.actions)
+            == len(self.rewards)
+            == len(self.dones)
+            == len(self.next_observations)
+            == n
+        ):
+            raise ValueError("All core columns must have equal length")
+        if self.infos and len(self.infos) not in (0, n):
+            raise ValueError("infos length must be 0 or match other columns")
 
+    # --- basic API -----------------------------------------------------------
     def size(self) -> int:
-        """Best effort batch dimension inference.
-
-        Tries observations first; user responsible for providing consistent shapes.
-        """
-        obs = self.observations
-        try:
-            return len(obs)  # type: ignore[arg-type]
-        except Exception as e:  # pragma: no cover - defensive
-            raise ValueError("Cannot infer batch size from observations") from e
+        return len(self.rewards)
 
     __len__ = size
 
@@ -43,31 +56,55 @@ class Batch:
             "infos": self.infos,
         }
 
+    # --- constructors --------------------------------------------------------
     @staticmethod
-    def merge(batches: List["Batch"]) -> "Batch":
-        if not batches:
-            raise ValueError("Cannot merge empty list of batches")
-        if len(batches) == 1:
-            return batches[0]
-
-        def _cat(values: Sequence[Any]) -> Any:  # naive concatenation supporting list-like
-            first = values[0]
-            if isinstance(first, list):
-                out: List[Any] = []
-                for v in values:
-                    out.extend(v)  # type: ignore[arg-type]
-                return out
-            # Fallback: attempt + operator (works for tensors / arrays typically)
-            acc = first
-            for v in values[1:]:
-                acc = acc + v  # type: ignore[operator]
-            return acc
-
+    def from_transition(
+        obs: Any,
+        action: Any,
+        reward: float,
+        done: bool | None,
+        next_obs: Any,
+        info: dict[str, Any] | None = None,
+        *,
+        terminal: bool | None = None,  # optional alias
+    ) -> Batch:
+        flag = done if done is not None else bool(terminal)
         return Batch(
-            observations=_cat([b.observations for b in batches]),
-            actions=_cat([b.actions for b in batches]),
-            rewards=_cat([b.rewards for b in batches]),
-            dones=_cat([b.dones for b in batches]),
-            next_observations=_cat([b.next_observations for b in batches]) if batches[0].next_observations is not None else None,
-            infos=[b.infos for b in batches],
+            [obs],
+            [action],
+            [reward],
+            [flag],
+            [next_obs],
+            infos=[info] if info is not None else [],
         )
+
+    # --- operations ----------------------------------------------------------
+    @staticmethod
+    def merge(batches: Iterable[Batch]) -> Batch:
+        batches = list(batches)
+        if not batches:
+            raise ValueError("no batches to merge")
+        if len(batches) == 1:
+            b = batches[0]
+            return Batch(
+                list(b.observations),
+                list(b.actions),
+                list(b.rewards),
+                list(b.dones),
+                list(b.next_observations),
+                infos=[dict(x) for x in b.infos],
+            )
+        obs: list[Any] = []
+        acts: list[Any] = []
+        rews: list[float] = []
+        dones: list[bool] = []
+        nxt: list[Any] = []
+        infos: list[dict[str, Any]] = []
+        for b in batches:
+            obs.extend(b.observations)
+            acts.extend(b.actions)
+            rews.extend(b.rewards)
+            dones.extend(b.dones)
+            nxt.extend(b.next_observations)
+            infos.extend(b.infos)
+        return Batch(obs, acts, rews, dones, nxt, infos=infos)

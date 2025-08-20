@@ -1,17 +1,18 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [ main, develop ]
-  workflow_dispatch:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop ]
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: [ '3.10', '3.11' ]
+      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,17 +20,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies (minimal)
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pytest hypothesis mypy black isort flake8
-      - name: Lint (flake8)
-        run: flake8 . || true
-      - name: Type Check (mypy)
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .[dev]
+        shell: bash
+      - name: Ruff lint & format check
         run: |
-          echo "[mypy]\nignore_missing_imports = True" > mypy.ini
-          mypy . || true
-      - name: Tests
-        run: pytest -q || true
-      - name: Summary
-        run: echo "CI skeleton executed"
+          ruff check --output-format=full .
+          ruff format --check .
+        shell: bash
+      - name: Mypy type check
+        run: mypy src/rlstudio || (echo "Type checking failed" && exit 1)
+        shell: bash
+      - name: Run tests
+        run: pytest -q
+        shell: bash

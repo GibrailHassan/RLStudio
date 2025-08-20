@@ -1,6 +1,18 @@
-"""RLStudio package root (early draft)."""
+"""RLStudio core package exports.
 
-from .core.batch import Batch  # noqa: F401
-from .core.interfaces import RLModule, ReplayBuffer, Trainer  # noqa: F401
+Expose stable public interfaces for milestone 1a components.
+"""
 
-__all__ = ["Batch", "RLModule", "ReplayBuffer", "Trainer"]
+from .core.batch import Batch
+from .core.interfaces import ReplayBuffer, RLModule, Trainer
+from .data.replay_buffer import ReplayBufferSimple
+from .utils.seeding import seed_all
+
+__all__: list[str] = [
+    "Batch",
+    "RLModule",
+    "ReplayBuffer",
+    "Trainer",
+    "ReplayBufferSimple",
+    "seed_all",
+]

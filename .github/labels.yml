@@ -1,0 +1,40 @@
+# Default labels (name, color, description)
+- name: bug
+  color: d73a4a
+  description: Defect or unintended behavior
+- name: enhancement
+  color: a2eeef
+  description: Feature request or improvement
+- name: documentation
+  color: 0075ca
+  description: Docs-related change
+- name: testing
+  color: 5319e7
+  description: Tests or test infra
+- name: performance
+  color: f2a654
+  description: Performance related
+- name: ci
+  color: 0e8a16
+  description: CI/CD pipeline
+- name: refactor
+  color: 0366d6
+  description: Refactoring code
+- name: design
+  color: fbca04
+  description: Architecture or interface design
+- name: reproducibility
+  color: c5def5
+  description: Determinism, seeds, reproducibility
+- name: governance
+  color: b60205
+  description: Policy, process, community
+- name: priority:must
+  color: b60205
+  description: Must-have for milestone
+- name: priority:should
+  color: d93f0b
+  description: Should-have for milestone
+- name: priority:could
+  color: fef2c0
+  description: Could-have (optional)
