@@ -1,6 +1,16 @@
+import functools
 import gymnasium as gym
 from typing import Optional, Callable, List
 from .vec_env import DummyVecEnv
+
+
+def _create_env(env_id: str, seed: int, rank: int):
+    """
+    Top-level helper to create environment, ensuring pickalability.
+    """
+    env = gym.make(env_id)
+    env.reset(seed=seed + rank)
+    return env
 
 
 class RLDataModule:
@@ -32,16 +42,18 @@ class RLDataModule:
         )  # Val usually 1 env for deterministic eval
 
     def _make_vec_env(self, env_id: str, num_envs: int, mode: str):
-        def make_env(rank):
-            def _thunk():
-                env = gym.make(env_id)
-                env.reset(seed=self.seed + rank)
-                return env
+        # Use functools.partial to create a no-arg callable that is picklable
+        env_fns = [
+            functools.partial(_create_env, env_id, self.seed, i)
+            for i in range(num_envs)
+        ]
 
-            return _thunk
+        if mode == "train" and num_envs > 1:
+            from .vec_env import SubprocVecEnv
 
-        env_fns = [make_env(i) for i in range(num_envs)]
-        return DummyVecEnv(env_fns)
+            return SubprocVecEnv(env_fns)
+        else:
+            return DummyVecEnv(env_fns)
 
     def train_dataloader(self):
         return self.train_env

@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-from typing import List, Callable, Optional, Union
+from typing import List, Callable, Optional, Union, Any
 import multiprocessing as mp
 
 
@@ -38,9 +38,7 @@ class DummyVecEnv(VecEnv):
 
     def reset(self):
         results = [env.reset() for env in self.envs]
-        # Unzip results (obs, info)
         obs, infos = zip(*results)
-        # Stack observations
         return np.stack(obs), infos
 
     def step(self, actions):
@@ -62,17 +60,98 @@ class DummyVecEnv(VecEnv):
 class SubprocVecEnv(VecEnv):
     """
     Vectorized environment that runs environments in separate processes.
-    MVP Implementation: Placeholder for Phase 1 (Scalability usually Phase 3, but Dummy is Phase 1)
     """
 
     def __init__(self, env_fns: List[Callable[[], gym.Env]]):
-        # Full implementation would use multiprocessing Pipe/Queue
-        # For Phase 1 MVP, we can reuse Dummy logic or implement basic MP
-        # Let's start with Dummy logic alias to pass tests until Phase 3 or full Phase 1 expansion
-        # Wait, plan said "Implement SubprocVecEnv" in Phase 1?
-        # Actually plan says "Implement SubprocVecEnv (Multiprocessing)" in Phase 3.
-        # But I replaced it in plan to include in Phase 1.
-        # Let's implement a simplified MP version or just stub it.
-        # Given "Scalability" is Phase 3, maybe strict MP is overkill for MVP step 1.
-        # I'll stick to DummyVecEnv logic for now to ensure stability, or minimal MP.
-        pass
+        self.waiting = False
+        self.closed = False
+        self.num_envs = len(env_fns)
+
+        ctx = mp.get_context("spawn")
+        self.remotes, self.work_remotes = zip(
+            *[ctx.Pipe() for _ in range(self.num_envs)]
+        )
+        self.processes = []
+
+        for work_remote, remote, env_fn in zip(
+            self.work_remotes, self.remotes, env_fns
+        ):
+            args = (work_remote, remote, env_fn)
+            process = ctx.Process(target=_worker, args=args, daemon=True)
+            process.start()
+            self.processes.append(process)
+            work_remote.close()
+
+        self.remotes[0].send(("get_spaces", None))
+        observation_space, action_space = self.remotes[0].recv()
+
+        super().__init__(self.num_envs, observation_space, action_space)
+
+    def step(self, actions: Union[np.ndarray, List[Any]]):
+        self._step_async(actions)
+        return self._step_wait()
+
+    def _step_async(self, actions):
+        for remote, action in zip(self.remotes, actions):
+            remote.send(("step", action))
+        self.waiting = True
+
+    def _step_wait(self):
+        results = [remote.recv() for remote in self.remotes]
+        self.waiting = False
+        obs, rewards, terminateds, truncateds, infos = zip(*results)
+        return (
+            np.stack(obs),
+            np.stack(rewards),
+            np.stack(terminateds),
+            np.stack(truncateds),
+            infos,
+        )
+
+    def reset(self):
+        for remote in self.remotes:
+            remote.send(("reset", None))
+        results = [remote.recv() for remote in self.remotes]
+        obs, infos = zip(*results)
+        return np.stack(obs), infos
+
+    def close(self):
+        if self.closed:
+            return
+        if self.waiting:
+            for remote in self.remotes:
+                remote.recv()
+        for remote in self.remotes:
+            remote.send(("close", None))
+        for p in self.processes:
+            p.join()
+        self.closed = True
+
+
+def _worker(remote, parent_remote, env_fn_wrapper):
+    parent_remote.close()
+    env = env_fn_wrapper()
+    try:
+        while True:
+            cmd, data = remote.recv()
+            if cmd == "step":
+                observation, reward, terminated, truncated, info = env.step(data)
+                if terminated or truncated:
+                    info["terminal_observation"] = observation
+                    observation, reset_info = env.reset()
+                    info["reset_info"] = reset_info
+                remote.send((observation, reward, terminated, truncated, info))
+            elif cmd == "reset":
+                observation, info = env.reset()
+                remote.send((observation, info))
+            elif cmd == "close":
+                remote.close()
+                break
+            elif cmd == "get_spaces":
+                remote.send((env.observation_space, env.action_space))
+            else:
+                raise NotImplementedError(f"Worker received unknown command: {cmd}")
+    except KeyboardInterrupt:
+        print("SubprocVecEnv worker: got KeyboardInterrupt")
+    finally:
+        env.close()
