@@ -4,6 +4,8 @@ from typing import Optional, Any
 from rlstudio.modules import RLModule
 from rlstudio.envs import RLDataModule
 from rlstudio.data import ReplayBuffer
+import os
+import numpy as np
 
 
 class Trainer:
@@ -92,3 +94,30 @@ class Trainer:
 
             # 2. Train (Placeholder)
             pass
+
+        # End of training MLOps
+        if self.logger:
+            # 1. Log PyTorch Model
+            try:
+                mlflow.pytorch.log_model(model, "model")
+            except Exception as e:
+                print(f"MLflow model logging failed (normal if no run active): {e}")
+
+            # 2. Log ONNX Artifact
+            # Construct dummy input based on observation space
+            # Assuming Box space for simplicity
+            try:
+                if hasattr(model.observation_space, "shape"):
+                    # Create dummy input of correct shape
+                    shape = (1,) + model.observation_space.shape
+                    dummy_input = torch.randn(*shape)
+                else:
+                    dummy_input = torch.randn(1, 4)  # Fallback
+
+                onnx_path = "model.onnx"
+                model.to_onnx(onnx_path, dummy_input)
+                mlflow.log_artifact(onnx_path)
+                print(f"Logged ONNX model to MLflow.")
+                os.remove(onnx_path)
+            except Exception as e:
+                print(f"Failed to export/log ONNX model: {e}")

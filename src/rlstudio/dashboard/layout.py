@@ -7,6 +7,7 @@ navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink("Experiments", href="/experiments")),
         dbc.NavItem(dbc.NavLink("Pipeline Viz", href="/pipeline-viz")),
+        dbc.NavItem(dbc.NavLink("Launcher", href="/launcher")),
     ],
     brand="RLStudio",
     brand_href="/",

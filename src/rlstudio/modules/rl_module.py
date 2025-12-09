@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Union
 
 
 class RLModule(nn.Module, ABC):
@@ -40,9 +40,31 @@ class RLModule(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def training_step(self, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+    def training_step(self, batch: Any) -> Dict[str, Union[torch.Tensor, float]]:
         """
-        Computes losses for the given batch.
-        Returns: Dict of scalar tensors (e.g., {'loss': ..., 'policy_loss': ...})
+        Performs a single training step on a batch of data.
+        Returns a dictionary containing losses and metrics.
         """
         pass
+
+    def to_onnx(self, file_path: str, input_sample: torch.Tensor):
+        """
+        Exports the actor network to ONNX format.
+        """
+        if self.actor is None:
+            raise ValueError("Actor network is not defined.")
+
+        # Ensure model is in eval mode
+        self.actor.eval()
+
+        torch.onnx.export(
+            self.actor,
+            input_sample,
+            file_path,
+            export_params=True,
+            opset_version=11,
+            do_constant_folding=True,
+            input_names=["input"],
+            output_names=["output"],
+            dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+        )

@@ -12,6 +12,8 @@ def display_page(pathname):
         return experiments.layout
     elif pathname == "/pipeline-viz":
         return pipeline_viz.layout
+    elif pathname == "/launcher":
+        return launcher.layout
     else:
         return html.H1("Welcome to RLStudio", className="display-3")
 
