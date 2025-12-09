@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.3.4, pluggy-1.6.0
+rootdir: F:\Hobbies\RLStudio
+configfile: pyproject.toml
+plugins: anyio-4.11.0, dash-3.3.0, hydra-core-1.3.2
+collected 1 item
+
+tests\test_smoke.py F                                                    [100%]
+
+================================== FAILURES ===================================
+________________________________ test_imports _________________________________
+
+    def test_imports():
+        from rlstudio.core import Trainer, Experiment
+    
+>       ppo = PPO(obs_space, action_space, actor, critic)
+E       NameError: name 'obs_space' is not defined
+
+tests\test_smoke.py:13: NameError
+=========================== short test summary info ===========================
+FAILED tests/test_smoke.py::test_imports - NameError: name 'obs_space' is not...
+============================== 1 failed in 6.40s ==============================

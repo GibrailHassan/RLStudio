@@ -1,0 +1,48 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.3.4, pluggy-1.6.0
+rootdir: F:\Hobbies\RLStudio
+configfile: pyproject.toml
+plugins: anyio-4.11.0, dash-3.3.0, hydra-core-1.3.2
+collected 3 items
+
+tests\test_smoke.py .F.                                                  [100%]
+
+================================== FAILURES ===================================
+_____________________________ test_node_pipeline ______________________________
+
+    def test_node_pipeline():
+        def add_one(x):
+            return x + 1
+    
+        node1 = Node(add_one, inputs="input", outputs="intermediate", name="add_one")
+        pipeline = Pipeline([node1])
+    
+        # Manually run node for unit test
+>       res = node1.run({"input": 1})
+
+tests\test_smoke.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Node(add_one), inputs = {'input': 1}
+
+    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Executes the node's function with the provided inputs.
+        """
+        # Simple implementation for MVP: Assumes inputs is a dict of kwargs matching function signature
+        # In a full Kedro implementation, this logic is more complex (positional vs keyword matching)
+    
+        # Filter inputs to only pass what the function expects (basic safety)
+        sig = inspect.signature(self.func)
+        func_kwargs = {k: v for k, v in inputs.items() if k in sig.parameters}
+    
+        # If inputs was defined as a list map, we might need translation, but keeping it simple for now
+        # Assuming inputs mapping happens at Pipeline level or Catalog level for this MVP
+    
+>       result = self.func(**func_kwargs)
+E       TypeError: test_node_pipeline.<locals>.add_one() missing 1 required positional argument: 'x'
+
+src\rlstudio\pipeline\node.py:36: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_smoke.py::test_node_pipeline - TypeError: test_node_pipelin...
+========================= 1 failed, 2 passed in 9.59s =========================

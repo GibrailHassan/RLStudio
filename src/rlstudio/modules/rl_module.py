@@ -38,3 +38,11 @@ class RLModule(nn.Module, ABC):
         Returns: action
         """
         pass
+
+    @abstractmethod
+    def training_step(self, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+        """
+        Computes losses for the given batch.
+        Returns: Dict of scalar tensors (e.g., {'loss': ..., 'policy_loss': ...})
+        """
+        pass
