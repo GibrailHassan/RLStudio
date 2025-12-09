@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rlstudio"
+version = "0.1.0"
+description = "A Flexible, Scalable, and Reproducible Reinforcement Learning Framework"
+authors = [
+  { name = "Gibrail Hassan", email = "gibrail.hassan@example.com" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "numpy",
+    "gymnasium",
+    "torchrl",
+    "mlflow",
+    "hydra-core",
+    "kedro",
+    "dash",
+    "dash-cytoscape",
+    "plotly",
+    "pandas"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "isort",
+    "flake8"
+]
+ray = [
+    "ray[rllib]"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

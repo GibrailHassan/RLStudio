@@ -1,0 +1,15 @@
+# Hyperparameters
+# Organised by experiment or algorithm
+
+defaults:
+  - override hydra/launcher: submitit_local
+
+training:
+  seed: 42
+  device: "cpu"
+  total_timesteps: 10000
+
+algorithm:
+  name: "PPO"
+  learning_rate: 3e-4
+  gamma: 0.99

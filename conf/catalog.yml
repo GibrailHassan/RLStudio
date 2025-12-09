@@ -1,0 +1,6 @@
+# Data Catalog
+# Define your datasets here.
+# Example:
+# cartpole_replay_buffer:
+#   type: rlstudio.io.TorchRLReplayBufferDataset
+#   filepath: data/01_raw/cartpole_buffer.pt
