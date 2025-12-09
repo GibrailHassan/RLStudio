@@ -95,7 +95,7 @@ dmypy.json
 .idea/
 
 # Project specific
-data/
+/data/
 outputs/
 logs/
 mlruns/
