@@ -7,13 +7,13 @@ name = "rlstudio"
 version = "0.1.0"
 description = "A Flexible, Scalable, and Reproducible Reinforcement Learning Framework"
 authors = [
-  { name = "Gibrail Hassan", email = "gibrail.hassan@example.com" },
+  { name = "Gibrail Hassan", email = "hassangibrail@gmail.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: No License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -24,8 +24,12 @@ dependencies = [
     "mlflow",
     "hydra-core",
     "kedro",
+    "ray>=2.52.1",
+    "kedro-mlflow",
+    "kedro-viz",
     "dash",
     "dash-cytoscape",
+    "dash-bootstrap-components",
     "plotly",
     "pandas"
 ]
@@ -38,7 +42,8 @@ dev = [
     "flake8"
 ]
 ray = [
-    "ray[rllib]"
+    "ray[default]"
+
 ]
 
 [tool.setuptools.packages.find]
