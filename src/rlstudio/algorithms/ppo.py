@@ -56,7 +56,6 @@ class PPO(RLModule):
         actions = batch["action"]
         old_log_probs = batch["log_prob"]  # PPO needs old log probs
         rewards = batch["reward"]
-        next_obs = batch["next_obs"]
         dones = batch["done"]
 
         # NOTE: In a real PPO, we compute Advantages/Returns BEFORE mini-batch updates.

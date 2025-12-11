@@ -40,15 +40,21 @@ class Agent:
             self.model = self._build_model(self.datamodule.train_env)
 
         # 3. Setup Trainer
+        import mlflow
+
         epochs = (
             max_epochs if max_epochs else 10
         )  # heuristic mapping timesteps -> epochs for MVP
-        self.trainer = Trainer(max_epochs=epochs)
 
-        # 4. Train
-        # Create a default buffer if needed
-        buffer = ReplayBuffer(capacity=1000)
-        self.trainer.fit(self.model, self.datamodule, buffer)
+        # Start MLflow run
+        mlflow.set_experiment(self.algorithm_name)
+        with mlflow.start_run():
+            self.trainer = Trainer(max_epochs=epochs, logger=mlflow)
+
+            # 4. Train
+            # Create a default buffer if needed
+            buffer = ReplayBuffer(capacity=1000)
+            self.trainer.fit(self.model, self.datamodule, buffer)
 
     def predict(self, obs: Union[torch.Tensor, Any], deterministic: bool = True) -> Any:
         """
@@ -73,14 +79,40 @@ class Agent:
         """
         if self.algorithm_name == "PPO":
             # Heuristic network creation
-            # Real implementation would use properly sized heads based on observation_space
             obs_dim = env.observation_space.shape[0]
-            action_dim = env.action_space.n  # Assuming discrete for MVP CartPole
+            action_dim = env.action_space.n
 
             actor = nn.Sequential(
                 nn.Linear(obs_dim, 64), nn.Tanh(), nn.Linear(64, action_dim)
             )
             critic = nn.Sequential(nn.Linear(obs_dim, 64), nn.Tanh(), nn.Linear(64, 1))
             return PPO(env.observation_space, env.action_space, actor, critic)
+
+        elif self.algorithm_name == "DQN":
+            from rlstudio.algorithms import DQN
+
+            obs_dim = env.observation_space.shape[0]
+            action_dim = env.action_space.n
+
+            q_net = nn.Sequential(
+                nn.Linear(obs_dim, 64),
+                nn.ReLU(),
+                nn.Linear(64, 64),
+                nn.ReLU(),
+                nn.Linear(64, action_dim),
+            )
+            target_net = nn.Sequential(
+                nn.Linear(obs_dim, 64),
+                nn.ReLU(),
+                nn.Linear(64, 64),
+                nn.ReLU(),
+                nn.Linear(64, action_dim),
+            )
+
+            optimizer = torch.optim.Adam(q_net.parameters(), lr=1e-3)
+            return DQN(
+                env.observation_space, env.action_space, q_net, target_net, optimizer
+            )
+
         else:
             raise NotImplementedError(f"Algorithm {self.algorithm_name} not supported.")

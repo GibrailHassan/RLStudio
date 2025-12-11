@@ -1,127 +1,142 @@
-# RLStudio 🤖
+# 🧠 RLStudio: Enterprise MLOps for Reinforcement Learning
 
-**RLStudio** is a production-ready, scalable, and educational Reinforcement Learning framework designed for both novices and researchers. It bridges the gap between simple baselines and complex distributed training systems.
+> **A professional, distributed, and production-ready Reinforcement Learning ecosystem.**
 
-![Dashboard Preview](https://via.placeholder.com/800x400?text=RLStudio+Dashboard+Preview)
-
-## 🌟 Key Features
-
-### 1. **Layered API Design**
-
-* **High-Level API**: `Agent` class for scikit-learn style `fit()` / `predict()` usage. Ideal for quick experiments.
-* **Core API**: Composable `Trainer`, `RLModule`, `Pipeline`, and `Node` abstractions for deep research flexibility.
-
-### 2. **Scalability & Distribution**
-
-* **Vectorized Environments**: Built-in `SubprocVecEnv` for single-machine multiprocessing.
-* **Distributed Training**: Seamless integration with **Ray** for scaling data collection across clusters (Actor-Learner architecture).
-
-### 3. **Interactive Dashboard**
-
-* **Experiment Launcher**: Configure and launch training jobs directly from the UI.
-* **Pipeline Visualizer**: Interactive DAG visualization of your training/inference pipelines (powered by Dash Cytoscape).
-* **Experiment Browser**: View MLflow runs and metrics.
-
-### 4. **Production MLOps**
-
-* **MLflow Integration**: Automatic logging of hyperparameters, metrics, and models.
-* **ONNX Export**: Standardized model export for optimized inference deployment.
+RLStudio is a comprehensive MLOps platform designed to bridge the gap between academic RL research and enterprise production. It provides a unified interface for designing, training, and deploying RL agents, backed by a powerful distributed computing backend (Ray) and enterprise-grade observability (MLflow + Dash).
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Key Features
+
+### 1. **Enterprise Dashboard**
+
+A stunning, dark-themed Glassmorphism UI for managing the full lifecycle of RL experiments.
+
+- **Glass Card UI**: Modern, responsive, and visually immersive.
+- **Live Observability**: Real-time training metrics (Loss, Reward, Entropy) with interactive Plotly charts.
+- **Run Management**: Sort, filter, and compare experiments with ease.
+- **Experiment Launcher**: Launch new training jobs directly from the UI with custom hyperparameters.
+
+### 2. **Distributed Training Engine**
+
+Scalable architecture built on **Ray** for high-throughput experience collection.
+
+- **SubprocVecEnv**: Parallelize environment steps across CPU cores.
+- **Distributed Sampling**: Decoupled "Actors" for collecting data and "Learners" for updating policies (PPO, DQN).
+- **LazyMemmapStorage**: Efficiently handle massive replay buffers that exceed RAM.
+
+### 3. **Modular RL Pipeline**
+
+A strictly typed, component-based architecture inspired by modern MLOps standards.
+
+- **RLModule**: PyTorch-based policy/value networks.
+- **DataModule**: Standardized interface for environments (`Gymnasium` compatible).
+- **Core Abstractions**: `Trainer`, `Agent`, `Experiment` for reproducible workflows.
+
+### 4. **Production Ready**
+
+- **MLflow Integration**: Automatic logging of hyperparameters, metrics, and models.
+- **ONNX Export**: Seamless export of trained agents for high-performance inference.
+- **Strict Typing**: Full Python type hinting for reliability.
+
+---
+
+## 🛠️ Architecture
+
+```mermaid
+graph TD
+    Dashboard[🖥️ Enterprise Dashboard] -->|Launch| Experiment
+    Experiment -->|Config| Trainer
+    Trainer -->|Update| Agent[🤖 Agent (PPO/DQN)]
+    Trainer -->|Sync| RayActors[⚡ Ray Actors]
+    RayActors -->|Sample| Envs[Gymnasium Envs]
+    RayActors -->|Push Data| Buffer[ReplayBuffer]
+    Trainer -->|Pull Data| Buffer
+    Trainer -->|Log| MLflow[(MLflow Database)]
+```
+
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- Windows / Linux / MacOS
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/GibrailHassan/RLStudio.git
-cd RLStudio
+git clone https://github.com/your-username/rlstudio.git
+cd rlstudio
 
-# Install dependencies (including dev tools)
-pip install -e ".[dev,ray]"
+# Install dependencies (using uv is recommended for speed)
+pip install -e .
 ```
 
-### Training an Agent (High-Level API)
+### 1. **Launch the Dashboard**
 
-```python
-from rlstudio import Agent
-from rlstudio.envs import RLDataModule
-
-# 1. Setup Data
-datamodule = RLDataModule(env_id="CartPole-v1", num_envs=4, seed=42)
-
-# 2. Define Agent
-agent = Agent(algorithm="PPO", env_id="CartPole-v1")
-
-# 3. Train
-agent.fit(datamodule, max_epochs=10)
-
-# 4. Predict
-obs = datamodule.train_env.reset()[0]
-action = agent.predict(obs)
-print(f"Action: {action}")
-```
-
-### Launching the Dashboard
+The command center for your RL operations.
 
 ```bash
 python -m rlstudio.dashboard.index
 ```
 
-Open `http://127.0.0.1:8050` in your browser to access the Experiment Launcher and Visualizers.
+> Access at `http://127.0.0.1:8050`
 
----
-
-## 🏗️ Architecture
-
-RLStudio follows a modular design inspired by Kedro and PyTorch Lightning.
-
-```mermaid
-graph TD
-    User[User / Dashboard] -->|Config| Agent
-    Agent -->|Wraps| Trainer
-    Trainer -->|Orchestrates| RayActors[Ray Actors (Distributed)]
-    Trainer -->|Updates| RLModule[RLModule (Policy/Value)]
-    RayActors -->|Collect| Env[Environments]
-    RLModule -->|Export| ONNX[ONNX Artifact]
-    Trainer -->|Log| MLflow[MLflow Tracking]
-```
-
-* **RLModule**: Encapsulates the neural networks (Actor/Critic).
-* **Trainer**: Handles the training loop, utilizing `SubprocVecEnv` or `Ray` for data collection.
-* **DataModule**: Manages environment creation and preprocessing.
-
----
-
-## 🧪 Development
-
-### Running Tests
+### 2. **Run an Experiment via CLI**
 
 ```bash
-pytest tests/
+python run_experiment.py --algo PPO --env CartPole-v1 --epochs 50 --workers 4
 ```
 
-### Project Structure
+### 3. **Use the Python API**
 
-- `src/rlstudio/`: Main package.
-  * `agent.py`: High-level API.
-  * `core/`: Core components (`Trainer`, `Experiment`).
-  * `envs/`: Environment wrappers (`VecEnv`, `DataModule`).
-  * `algorithms/`: Algorithm implementations (`PPO`).
-  * `distributed/`: Ray actor implementations.
-  * `dashboard/`: Dash application.
+```python
+from rlstudio.agent import Agent
+
+# Train an agent
+agent = Agent(algorithm="PPO", env_id="LunarLander-v3")
+agent.fit(epochs=100)
+
+# Evaluate
+avg_reward = agent.evaluate(episodes=10)
+print(f"Average Reward: {avg_reward}")
+```
+
+---
+
+## 📚 Project Structure
+
+```
+rlstudio/
+├── conf/               # Hydra configuration files
+├── notebooks/          # Jupyter notebooks for analysis
+├── src/
+│   └── rlstudio/
+│       ├── algorithms/ # PPO, DQN implementations
+│       ├── core/       # Trainer, Experiment, Callbacks
+│       ├── dashboard/  # Dash Enterprise UI
+│       ├── data/       # Replay Buffers, Storage
+│       ├── distributed/# Ray Actor implementations
+│       ├── envs/       # Environment wrappers
+│       ├── modules/    # Neural Network definitions
+│       └── pipeline/   # Pipeline abstractions
+├── tests/              # Unit and integration tests
+└── run_experiment.py   # CLI Entry point
+```
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repo.
-2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
 3. Commit your changes (`git commit -m 'Add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
+4. Push to the branch.
 5. Open a Pull Request.
 
 ---
 
-**License**: MIT
+**Built with ❤️ by RLStudio Team**

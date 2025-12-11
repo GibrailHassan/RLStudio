@@ -90,10 +90,200 @@ class Trainer:
                 # Add to buffer
                 # TODO: Implement batch add
             else:
-                pass  # Local collection
+                # LOCAL COLLECTION
 
-            # 2. Train (Placeholder)
-            pass
+                if getattr(model, "is_off_policy", False):
+                    # --- OFF-POLICY LOOP (DQN, SAC) ---
+                    # 1. Collect Steps & Store in Buffer
+                    # We continue from where we left off ideally, but for MVP we reset or keep simple state
+                    obs, _ = datamodule.train_env.reset()
+                    obs = obs[0]  # Unpack VecEnv result for single-env logic
+
+                    for _ in range(self.train_batch_size):
+                        obs_t = torch.tensor(obs, dtype=torch.float32)
+                        with torch.no_grad():
+                            action, info = model.explore(obs_t)
+
+                        # Ensure action is a list for VecEnv
+                        # Support single env locally for now
+                        act_val = (
+                            action.item()
+                            if isinstance(action, torch.Tensor)
+                            else action
+                        )
+
+                        next_obs_arr, reward_arr, terminated_arr, truncated_arr, _ = (
+                            datamodule.train_env.step([act_val])
+                        )
+                        # Unpack single env results
+                        next_obs = next_obs_arr[0]
+                        reward = reward_arr[0]
+                        terminated = terminated_arr[0]
+                        truncated = truncated_arr[0]
+                        done = terminated or truncated
+
+                        # Add to ReplayBuffer
+                        # Assuming action is tensor, we might need item()
+                        act_val = (
+                            action.item()
+                            if isinstance(action, torch.Tensor)
+                            else action
+                        )
+                        buffer.add(
+                            {
+                                "obs": torch.tensor(obs, dtype=torch.float32),
+                                "action": torch.tensor(act_val, dtype=torch.float32),
+                                "reward": torch.tensor(reward, dtype=torch.float32),
+                                "next_obs": torch.tensor(next_obs, dtype=torch.float32),
+                                "done": torch.tensor(done, dtype=torch.float32),
+                            }
+                        )
+
+                        obs = next_obs
+                        if done:
+                            obs, _ = datamodule.train_env.reset()
+                            obs = obs[0]  # Unpack
+
+                    # 2. Train on Buffer
+                    # Verify we have enough data
+                    if len(buffer) >= self.minibatch_size:
+                        num_updates = self.train_batch_size // self.minibatch_size
+                        for _ in range(num_updates):
+                            # Sample and convert to Tensor
+                            s_batch = buffer.sample(self.minibatch_size)
+                            t_batch = {
+                                "obs": torch.tensor(
+                                    s_batch["obs"], dtype=torch.float32
+                                ),
+                                "action": torch.tensor(
+                                    s_batch["action"], dtype=torch.float32
+                                ),
+                                "reward": torch.tensor(
+                                    s_batch["reward"], dtype=torch.float32
+                                ),
+                                "next_obs": torch.tensor(
+                                    s_batch["next_obs"], dtype=torch.float32
+                                ),
+                                "done": torch.tensor(
+                                    s_batch["done"], dtype=torch.float32
+                                ),
+                            }
+
+                            metrics = model.training_step(t_batch)
+
+                            if self.logger:
+                                self.logger.log_metrics(
+                                    {
+                                        k: (
+                                            v.item()
+                                            if isinstance(v, torch.Tensor)
+                                            else v
+                                        )
+                                        for k, v in metrics.items()
+                                    },
+                                    step=epoch,
+                                )
+
+                else:
+                    # --- ON-POLICY LOOP (PPO) ---
+                    # 1. Collect Rollout
+                    observations = []
+                    actions = []
+                    rewards = []
+                    log_probs = []
+                    dones = []
+                    values = []
+
+                    obs, _ = datamodule.train_env.reset()
+                    obs = obs[0]  # Unpack VecEnv result
+
+                    for _ in range(self.train_batch_size):
+                        # Convert to tensor
+                        obs_tensor = torch.tensor(obs, dtype=torch.float32)
+
+                        # Explore
+                        with torch.no_grad():
+                            action, info = model.explore(obs_tensor)
+                            value = info.get("value", torch.tensor(0.0))
+                            log_prob = info.get("log_prob", torch.tensor(0.0))
+
+                        # Step
+                        # Ensure action is a list for VecEnv
+                        act_val = (
+                            action.item()
+                            if isinstance(action, torch.Tensor)
+                            else action
+                        )
+
+                        next_obs_arr, reward_arr, terminated_arr, truncated_arr, _ = (
+                            datamodule.train_env.step([act_val])
+                        )
+                        # Unpack
+                        next_obs = next_obs_arr[0]
+                        reward = reward_arr[0]
+                        terminated = terminated_arr[0]
+                        truncated = truncated_arr[0]
+                        done = terminated or truncated
+
+                        observations.append(obs_tensor)
+                        actions.append(action)
+                        rewards.append(torch.tensor(reward, dtype=torch.float32))
+                        log_probs.append(log_prob)
+                        dones.append(torch.tensor(done, dtype=torch.float32))
+                        values.append(value)
+
+                        obs = next_obs
+                        if done:
+                            obs, _ = datamodule.train_env.reset()
+                            obs = obs[0]  # Unpack
+
+                    # Stack
+                    batch = {
+                        "obs": torch.stack(observations),
+                        "action": torch.stack(actions),
+                        "reward": torch.stack(rewards),
+                        "log_prob": torch.stack(log_probs),
+                        "done": torch.stack(dones),
+                        "value": torch.stack(values),  # Needed for GAE
+                    }
+
+                    # Compute GAE (On-Policy only)
+                    # Ideally this should be modular, but putting here for MVP
+                    next_val = 0  # Approximation for last step
+                    batch = self._compute_gae(
+                        batch, next_val, model.gamma, model.gae_lambda
+                    )
+
+                    # 2. Train on Batch
+                    dataset_size = batch["obs"].shape[0]
+                    indices = np.arange(dataset_size)
+
+                    for _ in range(
+                        self.num_workers if self.distributed else 4
+                    ):  # Epochs per rollout
+                        np.random.shuffle(indices)
+                        for start in range(0, dataset_size, self.minibatch_size):
+                            end = start + self.minibatch_size
+                            mb_idx = indices[start:end]
+
+                            mini_batch = {k: v[mb_idx] for k, v in batch.items()}
+
+                            # Optimization Step
+                            metrics = model.training_step(mini_batch)
+
+                            # Log metrics
+                            if self.logger:
+                                self.logger.log_metrics(
+                                    {
+                                        k: (
+                                            v.item()
+                                            if isinstance(v, torch.Tensor)
+                                            else v
+                                        )
+                                        for k, v in metrics.items()
+                                    },
+                                    step=epoch,
+                                )
 
         # End of training MLOps
         if self.logger:
@@ -121,3 +311,29 @@ class Trainer:
                 os.remove(onnx_path)
             except Exception as e:
                 print(f"Failed to export/log ONNX model: {e}")
+
+    def _compute_gae(self, batch, next_value, gamma, gae_lambda):
+        rewards = batch["reward"].view(-1)
+        values = batch["value"].view(-1)
+        dones = batch["done"].view(-1)
+
+        advantages = torch.zeros_like(rewards)
+        last_gae_lam = 0
+
+        # Iterate backwards
+        for t in reversed(range(len(rewards))):
+            if t == len(rewards) - 1:
+                next_non_terminal = 1.0 - dones[t]
+                next_val = next_value
+            else:
+                next_non_terminal = 1.0 - dones[t]
+                next_val = values[t + 1]
+
+            delta = rewards[t] + gamma * next_val * next_non_terminal - values[t]
+            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam
+            advantages[t] = last_gae_lam
+
+        returns = advantages + values
+        batch["advantage"] = advantages
+        batch["return"] = returns
+        return batch

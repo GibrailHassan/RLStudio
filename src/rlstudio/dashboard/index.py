@@ -1,7 +1,7 @@
 from dash import Input, Output, html
 from .app import app
 from .layout import layout
-from .pages import experiments, pipeline_viz
+from .pages import experiments, pipeline_viz, launcher
 
 app.layout = layout
 
